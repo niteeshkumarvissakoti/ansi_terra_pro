@@ -32,17 +32,22 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: Terraform Init & Apply
+      - name: Terraform  Apply or Destroy
         working-directory: terraform
         run: |
-          terraform init
-          terraform apply -auto-approve
+          if [ "${{ github.event.inputs.action }}" = "create" ]; then
+            terraform apply -auto-approve
+          else
+            terraform destroy -auto-approve
+          fi
 
-      - name: Retrieve IP address
+      - name: Get EC2 IP
         working-directory: terraform
-        run: echo "::set-output name=ip::$(cat ip.txt)"
-        
-      - name: Install Ansible and SSH tools
+        run: |
+          IP=$(cat ip.txt)
+          echo "EC2_IP=$IP" >> $GITHUB_ENV
+
+      - name: Install Ansible & SSH tools
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible sshpass
@@ -50,26 +55,15 @@ jobs:
       - name: Install Ansible Role
         run: ansible-galaxy install bsmeding.docker
 
-      - name: Save Private Key
+      - name: Save private key
         run: |
           echo "${{ secrets.EC2_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: Get EC2 IP from Terraform output
-        working-directory: terraform
-        run: |
-          IP=$(cat ip.txt)
-          echo "EC2_IP=$IP" >> $GITHUB_ENV
-      
       - name: Create Ansible Inventory
         run: |
           echo "[all]" > inventory.ini
           echo "${{ env.EC2_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=key.pem" >> inventory.ini
-      
-      - name: Debug inventory.ini content
-        run: cat inventory.ini
-
 
       - name: Run Ansible Playbook
-        run: |
-          ansible-playbook -i inventory.ini ansible/docker_installation.yml
+        run: ansible-playbook -i inventory.ini ansible/docker_installation.yml
