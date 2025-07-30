@@ -39,16 +39,13 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.action }}" = "create" ]; then
             terraform apply -auto-approve
-            terraform output -raw instance_ip > ip.txt
           else
             terraform destroy -auto-approve
           fi
 
       - name: Get EC2 IP
         working-directory: terraform
-        run: |
-          IP=$(cat ip.txt)
-          echo "EC2_IP=$IP" >> $GITHUB_ENV
+        run: echo "::set-output name=ip::$(cat ip.txt)"
 
       - name: Install Ansible & SSH tools
         run: |
