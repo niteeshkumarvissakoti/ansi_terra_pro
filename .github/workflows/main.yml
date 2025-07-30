@@ -1,0 +1,41 @@
+# .github/workflows/deploy.yml
+name: Terraform EC2 + Docker via Ansible
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-east-1
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init & Apply
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Retrieve IP address
+        working-directory: terraform
+        run: echo "::set-output name=ip::$(cat ip.txt)"
+
+      - name: Install Ansible and SSH tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible sshpass
+
+      - name: Run Ansible Playbook
+        run: ansible-playbook -i ip.txt ansible/docker_installation.yml
