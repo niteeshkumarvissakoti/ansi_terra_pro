@@ -1,4 +1,5 @@
 # .github/workflows/deploy.yml
+
 name: Terraform EC2 + Docker via Ansible
 
 on:
@@ -31,10 +32,12 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+
       - name: Terraform Init
         working-directory: terraform
         run: terraform init
-      - name: Terraform  Apply or Destroy
+
+      - name: Terraform Apply or Destroy
         working-directory: terraform
         run: |
           if [ "${{ github.event.inputs.action }}" = "create" ]; then
@@ -42,34 +45,35 @@ jobs:
           else
             terraform destroy -auto-approve
           fi
-      - name: Copy IP file to root (optional)
-        working-directory: terraform
-        run: cp ip.txt ../ip.txt
 
-      - name: Get EC2 IP
-        id: ec2ip
+      # Ensure the public IP is output to ip.txt (adapt this if your output name differs)
+      - name: Save EC2 IP to file
         working-directory: terraform
-        run: echo "ip=$(cat ip.txt)" >> $GITHUB_OUTPUT
+        run: terraform output -raw public_ip > ip.txt
 
       - name: Debug IP file
         working-directory: terraform
         run: cat ip.txt
 
-      - name: Debug EC2 IP output
+      - name: Get EC2 IP
+        id: ec2ip
+        working-directory: terraform
         run: |
-          ip="${{ steps.ec2ip.outputs.ip }}"
-          echo "Fetched EC2 IP: $ip"
+          EC2IP=$(cat ip.txt)
+          echo "ip=$EC2IP" >> $GITHUB_OUTPUT
 
+      - name: Debug EC2 IP output
+        run: echo "${{ steps.ec2ip.outputs.ip }}"
 
       - name: Install Ansible & SSH tools
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible sshpass
 
-      - name: Install Docker Ansible Role
+      - name: Install Ansible Role
         run: ansible-galaxy install bsmeding.docker
 
-      - name: Save EC2 Private Key
+      - name: Save private key
         run: |
           echo "${{ secrets.EC2_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
@@ -77,7 +81,8 @@ jobs:
       - name: Create Ansible Inventory
         run: |
           echo "[all]" > inventory.ini
-          echo "${{ steps.ec2ip.outputs.ip }} ansible_user=ec2-user ansible_ssh_private_key_file=key.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> inventory.ini
+          echo "${{ steps.ec2ip.outputs.ip }} ansible_user=ec2-user ansible_ssh_private_key_file=key.pem" >> inventory.ini
+          cat inventory.ini
 
       - name: Run Ansible Playbook
         run: ansible-playbook -i inventory.ini ansible/docker_installation.yml
