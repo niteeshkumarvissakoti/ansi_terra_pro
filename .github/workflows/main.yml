@@ -48,6 +48,11 @@ jobs:
         working-directory: terraform
         run: echo "ip=$(cat ip.txt)" >> $GITHUB_OUTPUT
 
+      - name: Debug IP file
+        working-directory: terraform
+        run: cat ip.txt
+      - name: Debug EC2 IP output
+        run: echo "${{ steps.ec2ip.outputs.ip }}"
       - name: Install Ansible & SSH tools
         run: |
           sudo apt-get update
