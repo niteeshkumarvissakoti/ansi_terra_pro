@@ -18,3 +18,6 @@ resource "aws_instance" "web" {
     working_dir = "${path.module}"
   }
 }
+resource "aws_ec2_instance_connect_endpoint" "web" {
+  subnet_id = aws_subnet.web.id
+}
