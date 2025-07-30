@@ -17,6 +17,3 @@ resource "aws_instance" "web" {
     working_dir = "${path.module}"
   }
 }
-output "ec2_public_ip" {
-  value = aws_instance.web.public_ip
-}
