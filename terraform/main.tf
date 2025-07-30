@@ -14,6 +14,7 @@ resource "aws_instance" "web" {
 
     provisioner "local-exec" {
     command = "echo ${self.public_ip} > ip.txt"
+    working_dir = "${path.module}"
   }
 }
 output "ec2_public_ip" {
