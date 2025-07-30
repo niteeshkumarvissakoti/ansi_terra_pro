@@ -9,7 +9,7 @@ resource "aws_instance" "web" {
   instance_type = "t3.micro"
   key_name      = "test111"
   network:
-        assign_public_ip: true
+        assign_public_ip = true
   tags = {
     Name = "terra_ansi_pro" 
     }
