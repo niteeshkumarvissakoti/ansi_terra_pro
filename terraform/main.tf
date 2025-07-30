@@ -1,22 +1,10 @@
 
-
 provider "aws" {
-  region="us-east-1"
+  region = "us-east-1"
 }
 
-resource "aws_instance" "web" {
-  ami           = "ami-020cba7c55df1f615"
-  instance_type = "t3.micro"
-  key_name      = "test111"
-  associate_public_ip_address = true
-  tags = {
-    Name = "terra_ansi_pro" 
-    }
-
-    provisioner "local-exec" {
-    command = "echo ${self.public_ip} > ip.txt"
-    working_dir = "${path.module}"
-  }
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
 }
 
 resource "aws_security_group" "allow_ssh" {
@@ -39,8 +27,18 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
+resource "aws_instance" "web" {
+  ami                         = "ami-020cba7c55df1f615"
+  instance_type               = "t3.micro"
+  key_name                    = "test111"
+  associate_public_ip_address = true
+  vpc_security_group_ids      = [aws_security_group.allow_ssh.id]
 
+  tags = {
+    Name = "terra_ansi_pro"
+  }
+}
 output "ec2_instance_ip" {
   description = "The public IP address of the EC2 instance"
-  value       = aws_instance.myec2.public_ip
+  value       = aws_instance.web.public_ip
 }
