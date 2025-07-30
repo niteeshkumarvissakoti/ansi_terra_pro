@@ -5,9 +5,19 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Choose an action'
+        required: true
+        default: 'create'
+        type: choice
+        options:
+          - create
+          - destroy
 
 jobs:
-  deploy:
+  Terraform:
     runs-on: ubuntu-latest
 
     env:
@@ -31,11 +41,25 @@ jobs:
       - name: Retrieve IP address
         working-directory: terraform
         run: echo "::set-output name=ip::$(cat ip.txt)"
-
+        
       - name: Install Ansible and SSH tools
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible sshpass
 
+      - name: Install Ansible Role
+        run: ansible-galaxy install bsmeding.docker
+
+      - name: Save Private Key
+        run: |
+          echo "${{ secrets.EC2_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Create Ansible Inventory
+        run: |
+          echo "[all]" > inventory.ini
+          echo "${{ env.EC2_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=key.pem" >> inventory.ini
+
       - name: Run Ansible Playbook
-        run: ansible-playbook -i ip.txt ansible/docker_installation.yml
+        run: |
+          ansible-playbook -i inventory.ini ansible/docker_installation.yml
