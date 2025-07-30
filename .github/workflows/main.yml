@@ -39,6 +39,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.action }}" = "create" ]; then
             terraform apply -auto-approve
+            terraform output -raw instance_ip > ip.txt
           else
             terraform destroy -auto-approve
           fi
