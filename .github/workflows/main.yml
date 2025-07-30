@@ -37,10 +37,10 @@ jobs:
       - name: Terraform  Apply or Destroy
         working-directory: terraform
         run: |
-          if [ "${{ github.event.inputs.action }}" = "create" ]; then
-            terraform apply -auto-approve
-          else
+          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
             terraform destroy -auto-approve
+          else
+            terraform apply  -auto-approve
           fi
 
       - name: Get EC2 IP
